@@ -1,0 +1,47 @@
+version: '3'
+services:
+  frontend:
+    build:
+      context: ../../
+      dockerfile: Dockerfile
+    restart: always
+    environment:
+      - HTTPS=false
+    networks:
+      Consult:
+        ipv4_address: 172.41.0.4
+    ports:
+      - "3000:3000"  # Map container's port 80 to host's port 80
+
+  backend:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    networks:
+      Consult:
+        ipv4_address: 172.41.0.5
+    restart: always
+    depends_on:
+      - db
+    command: bash -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    ports:
+      - "8000:8000"  # Map container's port 8000 to host's port 8000
+
+  db:
+    image: postgres:latest
+    restart: always
+    environment:
+      - POSTGRES_DB=elloe_consult
+      - POSTGRES_USER=elloe
+      - POSTGRES_PASSWORD=wCh29&HE&T83
+      - POSTGRES_ROOT_PASSWORD=root
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+    networks:
+      - Consult
+
+networks:
+  Consult:
+    ipam:
+      config:
+        - subnet: 172.41.0.1/24

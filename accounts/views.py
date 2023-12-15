@@ -132,10 +132,8 @@ class SendPasswordResetEmail(generics.CreateAPIView):
         return Response({'msg': 'Sending Password Reset Email.'}, status=status.HTTP_200_OK)
     
 class UserPasswordReset(APIView):
-    serializer_class = UserPasswordResetSerializer
-
+    renderer_classes = [UserRenderers]
     def post(self, request, uid, token, format=None):
-        serializer = self.serializer_class(data=request.data, context={'uid': uid, 'token': token})
+        serializer = UserPasswordResetSerializer(data=request.data, context={'uid':uid, 'token':token})
         serializer.is_valid(raise_exception=True)
-        serializer.save()  # Add this line if your serializer is responsible for saving the data
-        return Response({'msg': 'Password Reset Done.'}, status=status.HTTP_200_OK)
+        return Response({'msg':'Password Reset Done.'}, status=status.HTTP_200_OK)

@@ -9,7 +9,6 @@ from rest_framework import serializers
 from .utils import Util
 from django.contrib.auth import get_user_model
 
-User = get_user_model()
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
     password2 = serializers.CharField(style={'input_type': 'password'}, write_only=True)
@@ -110,7 +109,6 @@ class SendPasswordResetEmailSerializer(serializers.ModelSerializer):
             uid = urlsafe_base64_encode(force_bytes(user.uid))
             token = PasswordResetTokenGenerator().make_token(user)
             link = 'http://localhost:3000/auth/password-change/'+uid+'/'+token
-
             # Send email
             body = 'Click the Following Link to Reset Your Password '+ link
             data = {
@@ -124,31 +122,30 @@ class SendPasswordResetEmailSerializer(serializers.ModelSerializer):
             raise ValidationError("You are not a Registered User")
 
 class UserPasswordResetSerializer(serializers.ModelSerializer):
-    email = serializers.EmailField(write_only=True)
+    try:
+        password = serializers.CharField(max_length=255, style={'input_type':'password'}, write_only=True)
+        password2 = serializers.CharField(max_length=255, style={'input_type':'password'}, write_only=True)
+        class Meta:
+            model = Users
+            fields = ['password', 'password2']
 
-    class Meta:
-        model = User
-        fields = ['password', 'password2', 'email']
+        def validate(self, attrs):
+            password = attrs.get('password')
+            password2 = attrs.get('password2')
+            uid = self.context.get('uid')
+            token = self.context.get('token')
 
-    def validate(self, attrs):
-        password = attrs.get('password')
-        password2 = attrs.get('password2')
-        email = attrs.get('email')
-        uid = self.context.get('uid')
-        token = self.context.get('token')
-
-        if password != password2:
-            raise serializers.ValidationError("Password doesn't match")
-
-        try:
+            if password != password2:
+                raise serializers.ValidationError("Password doesn't match")
             uid = smart_str(urlsafe_base64_decode(uid))
-            user = User.objects.get(email=email, uid=uid)
-        except User.DoesNotExist:
-            raise serializers.ValidationError("User not found")
-
-        if not PasswordResetTokenGenerator().check_token(user, token):
-            raise serializers.ValidationError("Token is not valid or is expired")
-
-        user.set_password(password)
-        user.save()
-        return attrs
+            user = Users.objects.get(uid=uid)
+            if not PasswordResetTokenGenerator().check_token(user, token):
+                raise ValidationError("Token is not valid or expired")
+            
+            user.set_password(password)
+            user.save()
+            return attrs 
+    
+    except DjangoUnicodeDecodeError:
+        PasswordResetTokenGenerator().check_token(user, token)
+        raise ValidationError('Token is not valid or expired')   

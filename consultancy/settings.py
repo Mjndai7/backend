@@ -40,6 +40,9 @@ CORS_ALLOW_METHODS = [
     'OPTIONS',
 ]
 
+CSRF_TRUSTED_ORIGINS = ['http://127.0.0.1']
+
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -55,6 +58,12 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'accounts',
+    'messaging',
+
+    # 3rd party apps.
+    'crispy_forms',
+    'bootstrap4',
+    'channels',
 ]
 
 MIDDLEWARE = [
@@ -70,6 +79,9 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'consultancy.urls'
+
+SECURE_CROSS_ORIGIN_OPENER_POLICY = None
+
 
 TEMPLATES = [
     {
@@ -102,7 +114,8 @@ DATABASES = {
         'HOST': 'localhost',
         'PORT': '5432',
 } }
-        
+
+# Added to tell Django to use new custom user model insted of built-in User model.
 AUTH_USER_MODEL = 'accounts.Users'
 USER_ID_FIELD = 'uid'
 
@@ -144,6 +157,21 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+# single root directory from where the Django application will serve the static files in production.
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+
+# Where our uploaded files will be located on the file system.
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# URL to access images in browser.
+MEDIA_URL = '/media/'
+
+# Added config for using bootstrap4 template pack with crispy forms.
+CRISPY_TEMPLATE_PACK = 'bootstrap4'
+
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
@@ -184,7 +212,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "http://41.80.114.225:3000",
-    "http://192.168.1.106:3000",
+    "http://188.166.92.30:3000",
 ]
 
 PASSWORD_RESET_TIMEOUT = 900
@@ -203,3 +231,26 @@ EMAIL_USE_SSL = False
 CORS_ALLOW_CREDENTIALS = False
 
 
+# To carry additional data to notification messages.
+DJANGO_NOTIFICATIONS_CONFIG = {
+    'USE_JSONFIELD': True,
+}
+
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
+    }
+}
+
+CHANNEL_LAYERS = {
+    'default':{
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [('localhost', '6379')],
+        },
+    },
+}
+
+WSGI_APPLICATION = 'consultancy.wsgi.application'
+ASGI_APPLICATION = 'consultancy.asgi.application'
