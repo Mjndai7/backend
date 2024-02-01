@@ -1,4 +1,4 @@
-#!/Users/jakendai/developer/Elloe-Consult-frontend/elloe_consult/backend/elloe_env/bin/python3
+#!/Users/jakendai/Quantum_engineering/Elloe-Consult-frontend/elloe_consult/backend/elloe_env/bin/python3
 # EASY-INSTALL-ENTRY-SCRIPT: 'autobahn==23.6.2','console_scripts','xbrnetwork-ui'
 import re
 import sys

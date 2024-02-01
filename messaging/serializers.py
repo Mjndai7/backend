@@ -2,34 +2,38 @@ from rest_framework import serializers
 from .models import ChatRoom, PrivateChatRoom, Message, PrivateMessage
 from accounts.models import Users
 
-class ChatRoomSerializer(serializers.ModelSerializer):
-    members = serializers.ListField(write_only=True)
+class UsersSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Users
+        fields = ['uid', 'email', 'username']  # Add other fields as needed
 
-    def create(self, validated_data):
-        members_data = validated_data.pop('members')
-        chat_room = ChatRoom.objects.create(**validated_data)
-        chat_room.users.set(members_data)
-        return chat_room
+class ChatRoomSerializer(serializers.ModelSerializer):
+    users = UsersSerializer(many=True)
 
     class Meta:
         model = ChatRoom
-        fields = '__all__'
+        fields = ['token', 'users', 'type', 'created_at', 'updated_at', 'name', 'username', 'email', 'uid',]
 
 class PrivateChatRoomSerializer(serializers.ModelSerializer):
+    users = UsersSerializer(many=True)
+    user1 = UsersSerializer()
+    user2 = UsersSerializer()
 
     class Meta:
         model = PrivateChatRoom
-        fields = '__all__'
+        fields = ['name', 'users', 'user1', 'user2', 'uid']
 
 class MessageSerializer(serializers.ModelSerializer):
-    userName = serializers.CharField(source='user.username', read_only=True)
+    user = UsersSerializer()
 
     class Meta:
         model = Message
-        fields = '__all__'
+        fields = ['user', 'room', 'message', 'timestamp', 'uid']
 
 class PrivateMessageSerializer(serializers.ModelSerializer):
+    private_sender = UsersSerializer()
+    private_receiver = UsersSerializer()
 
     class Meta:
         model = PrivateMessage
-        fields = '__all__'
+        fields = ['private_sender', 'private_receiver', 'privateroom', 'message', 'timestamp', 'uid']

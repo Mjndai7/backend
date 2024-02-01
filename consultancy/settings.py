@@ -13,6 +13,10 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 from pathlib import Path
 from datetime import timedelta
 import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 
 
@@ -22,6 +26,19 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
+
+# Agora Settings
+AGORA_APP_ID = os.environ.get('AGORA_APP_ID')
+AGORA_APP_CERTIFICATE = os.environ.get('AGORA_APP_CERTIFICATE')
+CHANNEL_NAME = os.environ.get('CHANNEL_NAME')
+CHANNEL = os.environ.get('CHANNEL')
+
+# Pusher Settings
+PUSHER_APP_ID = os.environ.get('PUSHER_APP_ID')
+PUSHER_KEY = os.environ.get('PUSHER_KEY')
+PUSHER_SECRET = os.environ.get('PUSHER_SECRET')
+PUSHER_CLUSTER = os.environ.get('PUSHER_CLUSTER')
+
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-)#b$05+=!f%fyn8s(g!5_dn&u=0x3m=u3(bb7xhdss2jd7ju2l'
@@ -42,6 +59,9 @@ CORS_ALLOW_METHODS = [
 
 CSRF_TRUSTED_ORIGINS = ['http://127.0.0.1']
 
+SECURE_CROSS_ORIGIN_OPENER_POLICY = None
+
+
 
 # Application definition
 
@@ -53,17 +73,23 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'corsheaders',
+    'accounts',
 
     'django_filters',
     'rest_framework',
-    'rest_framework_simplejwt',
-    'accounts',
+    'rest_framework.authtoken',
+    'users',
     'messaging',
+    'chat',
+    'calendly',
+    'ticketing',
+    'agora',
 
     # 3rd party apps.
     'crispy_forms',
     'bootstrap4',
     'channels',
+    'notifications',
 ]
 
 MIDDLEWARE = [
@@ -80,7 +106,6 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'consultancy.urls'
 
-SECURE_CROSS_ORIGIN_OPENER_POLICY = None
 
 
 TEMPLATES = [
@@ -100,6 +125,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'consultancy.wsgi.application'
+ASGI_APPLICATION = 'consultancy.asgi.application'
 
 
 # Database
@@ -108,15 +134,15 @@ WSGI_APPLICATION = 'consultancy.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'elloe_consult',
-        'USER': 'elloe',
+        'NAME':'titan',
+        'USER': 'kepler',
         'PASSWORD': 'wCh29&HE&T83',
         'HOST': 'localhost',
         'PORT': '5432',
 } }
 
 # Added to tell Django to use new custom user model insted of built-in User model.
-AUTH_USER_MODEL = 'accounts.Users'
+AUTH_USER_MODEL = 'users.UserAccount'
 USER_ID_FIELD = 'uid'
 
 
@@ -179,33 +205,16 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # settings.py
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ),
-}
-
-SIMPLE_JWT = {
-    'USER_ID_FIELD': 'uid',
-    
-
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'users.authentication.CustomTokenAuthentication'
+    ]
 }
 
 
-SIMPLE_JWT = {
-    
-    "AUTH_HEADER_TYPES": ("Bearer",),
-    "AUTH_HEADER_NAME": "HTTP_AUTHORIZATION",
-    'USER_ID_FIELD': 'uid',
-    "USER_ID_CLAIM": "user_id",
-    "USER_AUTHENTICATION_RULE": "rest_framework_simplejwt.authentication.default_user_authentication_rule",
 
-    "AUTH_TOKEN_CLASSES": ("rest_framework_simplejwt.tokens.AccessToken",),
-    "TOKEN_TYPE_CLAIM": "token_type",
-    "TOKEN_USER_CLASS": "rest_framework_simplejwt.models.TokenUser",
 
-    "JTI_CLAIM": "jti",
-
-}
+USER_ID_FIELD = 'uid'
+ 
 
 CORS_ALLOWED_ORIGINS = [
 
@@ -215,7 +224,13 @@ CORS_ALLOWED_ORIGINS = [
     "http://188.166.92.30:3000",
 ]
 
-PASSWORD_RESET_TIMEOUT = 900
+AUTH_COOKIE = 'token'
+AUTH_COOKIE_MAX_AGE = 60 * 60 * 24
+AUTH_COOKIE_SECURE = ('AUTH_COOKIE_SECURE', 'True') == 'True'
+AUTH_COOKIE_HTTP_ONLY = True
+AUTH_COOKIE_PATH = '/'
+AUTH_COOKIE_SAMESITE = 'None'
+PASSWORD_RESET_TIMEOUT = 40
 
 # Email Configuration 
 DEBUG = True
@@ -238,12 +253,6 @@ DJANGO_NOTIFICATIONS_CONFIG = {
 
 
 CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels.layers.InMemoryChannelLayer"
-    }
-}
-
-CHANNEL_LAYERS = {
     'default':{
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
@@ -252,5 +261,12 @@ CHANNEL_LAYERS = {
     },
 }
 
-WSGI_APPLICATION = 'consultancy.wsgi.application'
-ASGI_APPLICATION = 'consultancy.asgi.application'
+
+# consultancy/settings.py
+# Celery settings
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'UTC'

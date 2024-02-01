@@ -9,11 +9,11 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
 class UserAdmin(BaseUserAdmin):
     # The fields are populating the user models.
-    list_display = ["uid", 'email', "username", "is_admin"]
+    list_display = ["uid", 'email', "username", "is_admin", "first_name", "last_name"]
     list_filter = ["is_admin"]
     field_sets = [
         ("User Credentials", {"fields": ["email", "password"]}),
-        ("Personal info", {"fields": ["username"]}),
+        ("Personal info", {"fields": ["username", "first_name", "last_name"]}),
         ("Permissions", {"fields": ["is_admin"]}),
     ]
 
@@ -22,7 +22,7 @@ class UserAdmin(BaseUserAdmin):
             None,
             {
                 "classes": ["wide"],
-                "fields": ["email", "username", "password", "password2"]
+                "fields": ["email", "username", "password", "password2", "first_name", "last_name"]
             },
         ),
 

@@ -24,10 +24,7 @@ ARG DJANGO_ENV
 ENV DJANGO_ENV=${DJANGO_ENV}
 
 # Expose the port on which the Django server will run
-EXPOSE 8000
-
-# Run the Django server
-RUN python manage.py makemigrations accounts 
+EXPOSE 8000 
 
 # Run Gunicorn
-CMD gunicorn accounts.wsgi:application --bind 0.0.0.0:8000
+CMD gunicorn consultancy.asgi:application --bind 0.0.0.0:8000

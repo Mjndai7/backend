@@ -1,23 +1,20 @@
 from django.urls import path
-from .views import (
-    UserRegistrationView,
-    ConsultantRegistrationView,
-    NormalUserRegistrationView,
-    UserLoginView,
-    UserProfile,
-    UserChangePassword,
-    SendPasswordResetEmail,
-    UserPasswordReset,
-)
+from . import views
 
 urlpatterns = [
-    path('register/', UserRegistrationView.as_view(), name='user-registration'),
-    path('register/consultant/', ConsultantRegistrationView.as_view(), name='consultant-registration'),
-    path('register/normal/', NormalUserRegistrationView.as_view(), name='normal-user-registration'),
-    path('login/', UserLoginView.as_view(), name='user-login'),
-    path('profile/', UserProfile.as_view(), name='user-profile'),
-    path('change-password/', UserChangePassword.as_view(), name='user-change-password'),
-    path('send-password-reset-email/', SendPasswordResetEmail.as_view(), name='send-password-reset-email'),
-    path('reset-password/<str:uid>/<str:token>/', UserPasswordReset.as_view(), name='user-password-reset'),
-
+    path('register/user/', views.UserRegistrationView.as_view(), name='user_registration'),
+    path('register/consultant/', views.ConsultantRegistrationView.as_view(), name='consultant_registration'),
+    path('register/client/', views.ClientRegistrationView.as_view(), name='client_registration'),
+    path('login/', views.LoginView.as_view(), name='login'),
+    path('user/profile/', views.UserProfile.as_view(), name='user_profile'),
+    path('change-password/', views.UserChangePassword.as_view(), name='change_password'),
+    path('send-password-reset-email/', views.SendPasswordResetEmail.as_view(), name='send_password_reset_email'),
+    path('password-reset/<str:uid>/<str:token>/', views.UserPasswordReset.as_view(), name='password_reset'),
+    path('consultant/contact-information/', views.ConsultantContactInformationView.as_view(), name='consultant_contact_information'),
+    path('client/contact-information/', views.ClientContactInformationView.as_view(), name='client_contact_information'),
+    path('client/profile/', views.ClientProfileView.as_view(), name='client_profile'),
+    path('consultant/profile/', views.ConsultantProfileView.as_view(), name='consultant_profile'),
+    path('kyc/', views.KYCView.as_view(), name='kyc'),
+    path('billing-information/', views.BillingInformationView.as_view(), name='billing_information'),
+    path('client/billing-information/', views.ClientBillingInformationView.as_view(), name='client_billing_information'),
 ]

@@ -1,6 +1,6 @@
 # serializers.py
 from django.conf import settings
-from .models import Users, Consultant, NormalUser
+from .models import Users, Consultant, Client, ConsultantContactInformation, ClientContactInformation, ConsultantBillingInformation, ClientBillingInformation, ConsultantProfile, ClientProfile, KYC
 from django.core.exceptions import ValidationError
 from django.utils.encoding import smart_str, force_bytes, DjangoUnicodeDecodeError
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
@@ -8,16 +8,15 @@ from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from rest_framework import serializers
 from .utils import Util
 from django.contrib.auth import get_user_model
-
+from django.contrib.auth import authenticate
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
-    password2 = serializers.CharField(style={'input_type': 'password'}, write_only=True)
-
+    password2 = serializers.CharField(style={'input_type':'password'}, write_only=True)
     class Meta:
         model = Users
         fields = '__all__'
-        extra_kwargs = {
-            'password': {'write_only': True},
+        extra_kwargs={
+            'password':{'write_only':True}
         }
 
     def validate(self, data):
@@ -27,16 +26,17 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Password doesn't match")
         return data
     
-    def create(self, validated_data):
-        return Users.objects.create_user(**validated_data)
-
+    def create(self, validate_data):
+        return Users.objects.create_user(**validate_data)
+    
 class ConsultantRegistrationSerializer(serializers.ModelSerializer):
-    password2 = serializers.CharField(style={'input_type': 'password'}, write_only=True)
-
+    password2 = serializers.CharField(style={'input_type':'password'}, write_only=True)
     class Meta:
         model = Consultant
         fields = '__all__'
-        extra_kwargs = {'password': {'write_only': True}}
+        extra_kwargs={
+            'password':{'write_only':True}
+        }
 
     def validate(self, data):
         password = data.get('password')
@@ -44,17 +44,18 @@ class ConsultantRegistrationSerializer(serializers.ModelSerializer):
         if password != password2:
             raise serializers.ValidationError("Password doesn't match")
         return data
-
-    def create(self, validated_data):
-        return Consultant.objects.create_user(**validated_data)
-
-class NormalUserRegistrationSerializer(serializers.ModelSerializer):
-    password2 = serializers.CharField(style={'input_type': 'password'}, write_only=True)
-
+    
+    def create(self, validate_data):
+        return Consultant.objects.create_user(**validate_data)
+    
+class ClientRegistrationSerializer(serializers.ModelSerializer):
+    password2 = serializers.CharField(style={'input_type':'password'}, write_only=True)
     class Meta:
-        model = NormalUser
+        model = Client
         fields = '__all__'
-        extra_kwargs = {'password': {'write_only': True}}
+        extra_kwargs={
+            'password':{'write_only':True}
+        }
 
     def validate(self, data):
         password = data.get('password')
@@ -62,27 +63,79 @@ class NormalUserRegistrationSerializer(serializers.ModelSerializer):
         if password != password2:
             raise serializers.ValidationError("Password doesn't match")
         return data
+    
+    def create(self, validate_data):
+        return Client.objects.create_user(**validate_data)
 
-    def create(self, validated_data):
-        return NormalUser.objects.create_user(**validated_data)
 
-class UserLoginSerializer(serializers.ModelSerializer):
-    email = serializers.EmailField(max_length=255)
+class ConsultantContactInformationSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Users
-        fields = ['email', 'password']
+        model = ConsultantContactInformation
+        fields = ['user', 'phone_number', 'address', 'city', 'country', 'postal_code']
+
+
+class ClientContactInformationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ClientContactInformation
+        fields = (
+            'user',
+            'phone_number',
+            'address',
+            'city',
+            'country',
+            'postal_code',
+        )
+
+class ClientBillingInformationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ClientBillingInformation
+        fields = (
+            'card_number',
+            'expiry_month',
+            'expiry_year',
+            'cvv',
+        )
+
+class BillingInformationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ConsultantBillingInformation
+        fields = ['user', 'card_number', 'expiry_month', 'expiry_year', 'cvv']
+
+class ConsultantProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ConsultantProfile
+        fields = ['consultant', 'title', 'description', 'hourly_rate', 'portfolio_website_link']
+
+class ClientProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ClientProfile
+        fields = ['user', 'company_name', 'industry', 'budget', 'project_description']
+
+class KYCSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = KYC
+        fields = ['user', 'kra_pin', 'id_pin_number']
+
+class LoginSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True)
+
+    def validate(self, data):
+        # Validation logic (if any additional checks are needed)
+        return data
 
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Users
-        fields = ['uid', 'email', 'username']
+        fields = ['email', 'username']
+
 
 class UserChangePasswordSerializer(serializers.ModelSerializer):
     password = serializers.CharField(max_length=255, style={'input_type':'password'}, write_only=True)
     password2 = serializers.CharField(max_length=255, style={'input_type':'password'}, write_only=True)
 
     class Meta:
-        model = Users
+        model = Users, Client, Consultant
         fields = ['password', 'password2']
 
     def validate(self, attrs):
@@ -99,7 +152,7 @@ class UserChangePasswordSerializer(serializers.ModelSerializer):
 class SendPasswordResetEmailSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(max_length=255)
     class Meta:
-        model = Users
+        model = Users, Consultant, Client
         fields = ['email']
 
     def validate(self, attrs):
@@ -126,7 +179,7 @@ class UserPasswordResetSerializer(serializers.ModelSerializer):
         password = serializers.CharField(max_length=255, style={'input_type':'password'}, write_only=True)
         password2 = serializers.CharField(max_length=255, style={'input_type':'password'}, write_only=True)
         class Meta:
-            model = Users
+            model = Users, Client, Consultant
             fields = ['password', 'password2']
 
         def validate(self, attrs):

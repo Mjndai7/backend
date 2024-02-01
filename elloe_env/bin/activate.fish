@@ -33,7 +33,7 @@ end
 # Unset irrelevant variables.
 deactivate nondestructive
 
-set -gx VIRTUAL_ENV "/Users/jakendai/developer/Elloe-Consult-frontend/elloe_consult/backend/elloe_env"
+set -gx VIRTUAL_ENV "/Users/jakendai/Quantum_engineering/Elloe-Consult-frontend/elloe_consult/backend/elloe_env"
 
 set -gx _OLD_VIRTUAL_PATH $PATH
 set -gx PATH "$VIRTUAL_ENV/bin" $PATH

@@ -1,27 +1,32 @@
 
 import os
-import django
+import sys
+from pathlib import Path
 
 from django.core.asgi import get_asgi_application
 
+# This allows easy placement of apps within the interior
+# conversa_dj directory.
+
+ROOT_DIR = Path(__file__).resolve(strict=True).parent.parent
+sys.path.append(str(ROOT_DIR / "chat"))
+
+# If DJANGO_SETTINGS_MODULE is unset, default to the local settings
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'consultancy.settings')
-django.setup()
 
-from channels.routing import ProtocolTypeRouter, URLRouter
-from channels.auth import AuthMiddlewareStack
-from channels.security.websocket import AllowedHostsOriginValidator
+# This application object is used by any ASGI server configured to use this file.
+django_application = get_asgi_application()
 
-from messaging import routing as messaging_routing
+# Import websocket application here, so apps from django_application are loaded first
+from chat import routing  # noqa isort:skip
 
-django_asgi_app = get_asgi_application()
+from channels.routing import ProtocolTypeRouter, URLRouter  # noqa isort:skip
+from chat.middleware import TokenAuthMiddleware  # noqa isort:skip
 
-application = ProtocolTypeRouter({
-    "http": django_asgi_app,
-    "websocket": AllowedHostsOriginValidator(
-        AuthMiddlewareStack(
-        URLRouter(
-            messaging_routing.websocket_urlpatterns
-        )),
-    )
-    
-})
+
+application = ProtocolTypeRouter(
+    {
+        "http": get_asgi_application(),
+        "websocket": TokenAuthMiddleware(URLRouter(routing.websocket_urlpatterns)),
+    }
+)
