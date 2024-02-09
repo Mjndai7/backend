@@ -9,12 +9,13 @@ https://docs.djangoproject.com/en/4.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
+from decouple import config
 
 from pathlib import Path
 from datetime import timedelta
 import os
 from dotenv import load_dotenv
-
+import dj_database_url
 # Load environment variables from .env file
 load_dotenv()
 
@@ -72,46 +73,58 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.humanize',
     'corsheaders',
-    'accounts',
-
+    
     'django_filters',
     'rest_framework',
     'rest_framework.authtoken',
-    'users',
-    'messaging',
+    'rest_framework_simplejwt.token_blacklist',
+    'django_celery_beat',
+    'ordered_model',
+
+    #custom apps
+    'user',
+    'authentication',
     'chat',
     'calendly',
     'ticketing',
     'agora',
+    'jobs',
+    'direct_messages',
+    
 
     # 3rd party apps.
     'crispy_forms',
     'bootstrap4',
     'channels',
     'notifications',
+    'taggit',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
 
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
+
 ]
 
 ROOT_URLCONF = 'consultancy.urls'
 
-
-
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'templates')],
+        'DIRS': [
+            BASE_DIR / 'frontend' / 'build',
+            BASE_DIR / 'authentication' / 'templates',
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -134,17 +147,15 @@ ASGI_APPLICATION = 'consultancy.asgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME':'titan',
-        'USER': 'kepler',
+        'NAME':'voyager',
+        'USER': 'mars',
         'PASSWORD': 'wCh29&HE&T83',
         'HOST': 'localhost',
         'PORT': '5432',
 } }
 
 # Added to tell Django to use new custom user model insted of built-in User model.
-AUTH_USER_MODEL = 'users.UserAccount'
-USER_ID_FIELD = 'uid'
-
+AUTH_USER_MODEL = 'user.User'
 
 
 # Password validation
@@ -177,21 +188,16 @@ USE_I18N = True
 
 USE_TZ = True
 
+#static files
+STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/4.2/howto/static-files/
+STATIC_ROOT = BASE_DIR / 'static'
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [
+    BASE_DIR / 'frontend' / 'build' / 'static'
+]
 
-STATIC_URL = 'static/'
-
-# single root directory from where the Django application will serve the static files in production.
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-
-STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
-
-# Where our uploaded files will be located on the file system.
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-
-# URL to access images in browser.
+MEDIA_ROOT = BASE_DIR / 'media'
 MEDIA_URL = '/media/'
 
 # Added config for using bootstrap4 template pack with crispy forms.
@@ -204,46 +210,86 @@ CRISPY_TEMPLATE_PACK = 'bootstrap4'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # settings.py
+# Rest Framework
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'users.authentication.CustomTokenAuthentication'
-    ]
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
+}
+
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=50),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=50),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'UPDATE_LAST_LOGIN': False,
+
+    'ALGORITHM': 'HS256',
+
+    'VERIFYING_KEY': None,
+    'AUDIENCE': None,
+    'ISSUER': None,
+    'JWK_URL': None,
+    'LEEWAY': 0,
+
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
+    'USER_AUTHENTICATION_RULE': 'rest_framework_simplejwt.authentication.default_user_authentication_rule',
+
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+    'TOKEN_TYPE_CLAIM': 'token_type',
+    'TOKEN_USER_CLASS': 'rest_framework_simplejwt.models.TokenUser',
+
+    'JTI_CLAIM': 'jti',
+
+    'SLIDING_TOKEN_REFRESH_EXP_CLAIM': 'refresh_exp',
+    'SLIDING_TOKEN_LIFETIME': timedelta(minutes=5),
+    'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
 }
 
 
 
+# Celery
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
 
-USER_ID_FIELD = 'uid'
+# Celery Beat
+CELERY_BEAT_SCHEDULE = {
+    'update_link_visibility_status': {
+        'task': 'task.tasks.update_link_visibility_status',
+        'schedule': timedelta(minutes=1),  # Run the task every minute
+    },
+}
+
+# Email Configuration
+DEBUG = True
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_HOST_USER = 'michaelndai997@gmail.com'
+EMAIL_HOST_ADDRESS = 'michaelndai997@gmail.com'
+EMAIL_HOST_PASSWORD = 'zcrxltrfprwrkmip'
+EMAIL_HOST_TRUE = True
+EMAIL_USE_SSL = False
+
+
+
  
-
 CORS_ALLOWED_ORIGINS = [
 
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "http://41.80.114.225:3000",
     "http://188.166.92.30:3000",
+
 ]
 
-AUTH_COOKIE = 'token'
-AUTH_COOKIE_MAX_AGE = 60 * 60 * 24
-AUTH_COOKIE_SECURE = ('AUTH_COOKIE_SECURE', 'True') == 'True'
-AUTH_COOKIE_HTTP_ONLY = True
-AUTH_COOKIE_PATH = '/'
-AUTH_COOKIE_SAMESITE = 'None'
-PASSWORD_RESET_TIMEOUT = 40
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_ALL_ORIGINS = True
 
-# Email Configuration 
-DEBUG = True
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_HOST_USER = 'michaelndai997@gmail.com'
-EMAIL_FROM_ADDRESS = 'michaelndai997@gmail.com'
-EMAIL_HOST_PASSWORD = 'zcrxltrfprwrkmip'
-EMAIL_USE_TLS = True
-EMAIL_USE_SSL = False
-
-CORS_ALLOW_CREDENTIALS = False
 
 
 # To carry additional data to notification messages.

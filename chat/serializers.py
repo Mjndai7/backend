@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from chat.models import Message, Conversation
-from users.serializers import Profile  # Assuming Profile is your detailed user serializer
+from user.serializers import Profile  # Assuming Profile is your detailed user serializer
 from django.contrib.auth import get_user_model
 
 User = get_user_model()

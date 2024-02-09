@@ -3,7 +3,6 @@ from channels.db import database_sync_to_async
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
 from django.conf import settings
-from users.authentication import CustomTokenAuthentication  # Ensure correct import path
 
 User = get_user_model()
 
@@ -12,7 +11,7 @@ def get_user_with_cookie(token_key):
     """
     Retrieve the user associated with the given token from cookies.
     """
-    authentication = CustomTokenAuthentication()
+    authentication = ()
     user, _ = authentication.authenticate_credentials(token_key)
     return user or AnonymousUser()
 
